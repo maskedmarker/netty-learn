@@ -21,7 +21,8 @@ public class HttpProxyServer {
         ServerBootstrap serverBootstrap = new ServerBootstrap();
         serverBootstrap.group(boss, worker)
                 .channel(NioServerSocketChannel.class)
-                .childHandler(new ChannelInitializer<SocketChannel>() { // 自定义child-channel的初始化ChannelInitializer,parent-channel的初始化ChannelInitializer由框架来完成
+                // 自定义child-channel的初始化ChannelInitializer,parent-channel的初始化ChannelInitializer由框架来完成
+                .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) {
                         ch.pipeline().addLast(new HttpServerCodec());
