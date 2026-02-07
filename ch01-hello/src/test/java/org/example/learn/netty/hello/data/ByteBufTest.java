@@ -1,4 +1,4 @@
-package org.example.learn.netty.hello.basic;
+package org.example.learn.netty.hello.data;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
