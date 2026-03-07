@@ -10,6 +10,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>ch01-hello</module>
+        <module>ch00-infra</module>
     </modules>
 
     <properties>

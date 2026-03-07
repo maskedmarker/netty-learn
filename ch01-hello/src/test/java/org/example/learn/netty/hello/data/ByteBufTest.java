@@ -10,7 +10,8 @@ import org.junit.Test;
 import java.nio.charset.StandardCharsets;
 
 /**
- * ByteBuf是对java nio的ByteBuffer的
+ * ByteBuf是netty大量使用的基础数据结构
+ * 不仅是对java nio的ByteBuffer的封装,还有了许多各具特色的子类
  */
 public class ByteBufTest {
 
@@ -159,6 +160,33 @@ public class ByteBufTest {
         log("discardReadBytes数据后", buf);
         Assert.assertEquals("discardReadBytes会将readable-bytes移动到起始位置", 0, buf.readerIndex());
         Assert.assertEquals("discardReadBytes会将readable-bytes移动到起始位置", buf.capacity() - 1, buf.readableBytes());
+    }
+
+    /**
+     * 从一个ByteBuf读取数据到另一个ByteBuf
+     * readerIndex指的是当前可读取的第一个字节的index,writerIndex指的是当前可以写入的第一个字节的index
+     */
+    @Test
+    public void test051() throws Exception {
+        ByteBuf buf1 = Unpooled.buffer(); // 默认big-endian
+        ByteBuf buf2 = Unpooled.buffer();
+        for (int i = 0; i < 256; i += 8) {
+            buf1.writeBytes(new byte[] {(byte)i, (byte)(i+1), (byte)(i+2), (byte)(i+3), (byte)(i+4), (byte)(i+5), (byte)(i+6), (byte)(i+7)});
+        }
+        log("写入数据后的buf1", buf1);
+        log("未写入数据的buf2", buf2);
+        Assert.assertEquals("buf1写满数据后,readerIndex在起始位置0", 0, buf1.readerIndex());
+        Assert.assertEquals("buf1写满数据后,writerIndex在out-of-index的位置", 256, buf1.writerIndex());
+        Assert.assertEquals("buf2初始化后,readerIndex在起始位置0", 0, buf2.readerIndex());
+        Assert.assertEquals("buf2初始化后,writerIndex也在起始位置0", 0, buf2.writerIndex());
+
+        buf2.writeBytes(buf1);
+        log("从buf1读取数据后的buf1", buf1);
+        log("从buf1读取数据后的buf2", buf2);
+        Assert.assertEquals("从buf1批量读取数据后,buf1的readerIndex改变,buf1的writerIndex不改变", 256, buf1.readerIndex());
+        Assert.assertEquals("从buf1批量读取数据后,buf1的readerIndex改变,buf1的writerIndex不改变", 256, buf1.writerIndex());
+        Assert.assertEquals("从buf1批量读取数据后,buf2的readerIndex不改变,buf2的writerIndex改变", 0, buf2.readerIndex());
+        Assert.assertEquals("从buf1批量读取数据后,buf2的readerIndex不改变,buf2的writerIndex改变", 256, buf2.writerIndex());
     }
 
 
