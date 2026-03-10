@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledDirectByteBuf;
 import io.netty.buffer.UnpooledHeapByteBuf;
+import org.example.learn.netty.hello.proxy.util.ByteBufUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -13,7 +14,7 @@ import java.nio.charset.StandardCharsets;
  * ByteBuf是netty大量使用的基础数据结构
  * 不仅是对java nio的ByteBuffer的封装,还有了许多各具特色的子类
  */
-public class ByteBufTest {
+public class ByteBuf1Test {
 
     /**
      *  It is recommended to create a new buffer using the helper methods in Unpooled rather than calling an individual implementation's constructor.
@@ -212,12 +213,6 @@ public class ByteBufTest {
 
 
     private void log(String info, ByteBuf buf) {
-        int readerIndex = buf.readerIndex();
-        int writerIndex = buf.writerIndex();
-        int capacity = buf.capacity();
-        int readableBytes = buf.readableBytes();
-        int writableBytes = buf.writableBytes();
-
-        System.out.printf("%s: capacity=%d, readerIndex=%d, writerIndex=%d, readableBytes=%d, writableBytes=%d\n", info, capacity, readerIndex, writerIndex, readableBytes, writableBytes);
+        ByteBufUtils.log(info, buf);
     }
 }
