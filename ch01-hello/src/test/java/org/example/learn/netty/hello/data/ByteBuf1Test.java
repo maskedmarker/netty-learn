@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledDirectByteBuf;
 import io.netty.buffer.UnpooledHeapByteBuf;
-import org.example.learn.netty.hello.proxy.util.ByteBufUtils;
+import org.example.learn.netty.hello.util.ByteBufUtils;
 import org.junit.Assert;
 import org.junit.Test;
 

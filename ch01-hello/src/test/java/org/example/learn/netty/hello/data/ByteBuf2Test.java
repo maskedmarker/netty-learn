@@ -2,10 +2,7 @@ package org.example.learn.netty.hello.data;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.buffer.UnpooledDirectByteBuf;
-import io.netty.buffer.UnpooledHeapByteBuf;
-import org.example.learn.netty.hello.proxy.util.ByteBufUtils;
-import org.junit.Assert;
+import org.example.learn.netty.hello.util.ByteBufUtils;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -44,4 +41,23 @@ public class ByteBuf2Test {
         System.out.println("ByteBufUtils.arr(byteBuf) = " + ByteBufUtils.arr(byteBuf));
     }
 
+    /**
+     * copy底层数组与原数组无联动
+     * Returns a copy of this buffer's readable bytes. Modifying the content of the returned buffer or this buffer does not affect each other at all.
+     */
+    @Test
+    public void test03() {
+        byte[] bytes = "hello world".getBytes(StandardCharsets.UTF_8);
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(bytes);
+        ByteBuf copy = byteBuf.copy();
+
+        ByteBufUtils.log("", byteBuf);
+        System.out.println("ByteBufUtils.arr(byteBuf) = " + ByteBufUtils.arr(byteBuf));
+        ByteBufUtils.log("", byteBuf);
+        System.out.println("ByteBufUtils.arr(copy) = " + ByteBufUtils.arr(copy));
+
+        bytes[10] = 0x6c;
+        System.out.println("ByteBufUtils.arr(byteBuf) = " + ByteBufUtils.arr(byteBuf));
+        System.out.println("ByteBufUtils.arr(copy) = " + ByteBufUtils.arr(copy));
+    }
 }

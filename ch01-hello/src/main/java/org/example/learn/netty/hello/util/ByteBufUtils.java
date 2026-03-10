@@ -1,4 +1,4 @@
-package org.example.learn.netty.hello.proxy.util;
+package org.example.learn.netty.hello.util;
 
 import io.netty.buffer.ByteBuf;
 
