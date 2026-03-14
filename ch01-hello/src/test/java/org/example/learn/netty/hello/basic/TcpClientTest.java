@@ -41,8 +41,8 @@ public class TcpClientTest {
 
         EventLoopGroup group = new NioEventLoopGroup();
         try {
-            Bootstrap b = new Bootstrap();
-            b.group(group)
+            Bootstrap clientBootstrap = new Bootstrap();
+            clientBootstrap.group(group)
                     .channel(NioSocketChannel.class)
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
@@ -53,14 +53,14 @@ public class TcpClientTest {
                         }
                     });
             // 建立tcp连接
-            Channel channel = b.connect(host, port).sync().channel();
+            Channel channel = clientBootstrap.connect(host, port).sync().channel();
 
             // 构造请求
             ByteBuf request = Unpooled.copiedBuffer("hello world".getBytes(StandardCharsets.UTF_8));
             // 发送请求
-            ChannelFuture channelFuture = channel.writeAndFlush(request);
-            // 发送完毕后,关闭连接
-            channelFuture.sync();
+            ChannelFuture writeFuture = channel.writeAndFlush(request);
+            // 发送完毕后,主动关闭连接
+            writeFuture.sync();
             channel.close().sync();
         } finally {
             group.shutdownGracefully();

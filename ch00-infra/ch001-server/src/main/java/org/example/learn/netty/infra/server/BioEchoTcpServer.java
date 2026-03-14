@@ -11,7 +11,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- *
+ * 读取客户端数据并原样返回,
+ * 不主动关闭连接,如果对端发起断开连接的请求后,服务器才断开连接
  */
 public class BioEchoTcpServer {
 

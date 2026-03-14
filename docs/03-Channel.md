@@ -78,3 +78,18 @@ Socket remains open,You can still: sendto(...) to arbitrary addresses, and recvf
 
 一句话总结就是,disconnect() breaks the association with the remote peer while close() destroys the channel itself — for TCP they are equivalent, for UDP they are fundamentally different.
 ```
+
+## DefaultChannelConfig
+
+```text
+public NioSocketChannel(Channel parent, SocketChannel socket) {
+    super(parent, socket);
+    config = new NioSocketChannelConfig(this, socket.socket());     // NioSocketChannel在创建时,会同步创建NioSocketChannelConfig(默认使用AdaptiveRecvByteBufAllocator)
+}
+
+public DefaultChannelConfig(Channel channel) {
+    this(channel, new AdaptiveRecvByteBufAllocator());             // AdaptiveRecvByteBufAllocator会在初始会使用比较小的byteBuf从socket读取数据,然后会基于上次实际从socket读取到的数据量,在下次使用大小更合适的byteBuf,如果上次实际读取量没有占满byteBuf的存储空间下次换更小的byteBuf,反之用更大的byteBuf
+}
+
+// RecvByteBufAllocator
+```

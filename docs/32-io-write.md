@@ -1,146 +1,5 @@
 # example-explain-i/o
 
-## connect
-
-样例代码
-```text
-Channel channel = bootstrap.connect(host, port).sync().channel();
-```
-
-实际调用
-```text
-io.netty.bootstrap.Bootstrap.connect(java.lang.String, int)
-    io.netty.bootstrap.Bootstrap.connect(java.net.SocketAddress)
-        io.netty.bootstrap.Bootstrap.doResolveAndConnect
-            io.netty.bootstrap.Bootstrap.doResolveAndConnect0
-                io.netty.channel.AbstractChannel.connect(java.net.SocketAddress, java.net.SocketAddress, io.netty.channel.ChannelPromise)
-                    io.netty.channel.DefaultChannelPipeline.connect(java.net.SocketAddress, java.net.SocketAddress, io.netty.channel.ChannelPromise)
-                        io.netty.channel.AbstractChannelHandlerContext.connect(java.net.SocketAddress, java.net.SocketAddress, io.netty.channel.ChannelPromise)
-                            io.netty.channel.AbstractChannelHandlerContext.invokeConnect
-                                io.netty.channel.DefaultChannelPipeline.HeadContext.connect
-                                    io.netty.channel.nio.AbstractNioChannel.AbstractNioUnsafe.connect
-                                        io.netty.channel.socket.nio.NioSocketChannel.doBind
-                                            io.netty.channel.socket.nio.NioSocketChannel.doBind0
-
-
-
-io.netty.bootstrap.Bootstrap.connect(java.lang.String, int)
-    public ChannelFuture connect(String inetHost, int inetPort) {
-        return connect(InetSocketAddress.createUnresolved(inetHost, inetPort));
-    }
-
-io.netty.bootstrap.Bootstrap.connect(java.net.SocketAddress)
-    public ChannelFuture connect(SocketAddress remoteAddress) {
-        ObjectUtil.checkNotNull(remoteAddress, "remoteAddress");
-        validate();
-        return doResolveAndConnect(remoteAddress, config.localAddress());
-    }
-
-io.netty.bootstrap.Bootstrap.doResolveAndConnect
-    private ChannelFuture doResolveAndConnect(final SocketAddress remoteAddress, final SocketAddress localAddress) {
-        final ChannelFuture regFuture = initAndRegister();
-        final Channel channel = regFuture.channel();
-
-        if (regFuture.isDone()) {
-            if (!regFuture.isSuccess()) {
-                return regFuture;
-            }
-            return doResolveAndConnect0(channel, remoteAddress, localAddress, channel.newPromise());
-        } else {
-            //...
-            return promise;
-        }
-    }
-
-
-io.netty.bootstrap.Bootstrap.doResolveAndConnect0
-    private ChannelFuture doResolveAndConnect0(final Channel channel, SocketAddress remoteAddress, final SocketAddress localAddress, final ChannelPromise promise) {
-        try {
-            if (disableResolver) {
-                doConnect(remoteAddress, localAddress, promise);
-                return promise;
-            }
-            // ...
-        } catch (Throwable cause) {
-            promise.tryFailure(cause);
-        }
-        return promise;
-    }
-
-io.netty.bootstrap.Bootstrap.doConnect
-    private static void doConnect(final SocketAddress remoteAddress, final SocketAddress localAddress, final ChannelPromise connectPromise) {
-
-        // This method is invoked before channelRegistered() is triggered.  Give user handlers a chance to set up the pipeline in its channelRegistered() implementation.
-        final Channel channel = connectPromise.channel();
-        channel.eventLoop().execute(new Runnable() {
-            @Override
-            public void run() {
-                if (localAddress == null) {
-                    channel.connect(remoteAddress, connectPromise);
-                } else {
-                    channel.connect(remoteAddress, localAddress, connectPromise);
-                }
-                connectPromise.addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
-            }
-        });
-    }
-
-
-io.netty.channel.AbstractChannel.connect(java.net.SocketAddress, java.net.SocketAddress, io.netty.channel.ChannelPromise)
-    public ChannelFuture connect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {
-        return pipeline.connect(remoteAddress, localAddress, promise);
-    }
-
-io.netty.channel.DefaultChannelPipeline.connect(java.net.SocketAddress, java.net.SocketAddress, io.netty.channel.ChannelPromise)    
-    public final ChannelFuture connect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {
-        return tail.connect(remoteAddress, localAddress, promise);  // 💯💯💯 out-bound是从tail->head的责任链处理,这样所有handler都能处理connect请求
-    } 
-    
-io.netty.channel.AbstractChannelHandlerContext.invokeConnect
-    private void invokeConnect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {
-        if (invokeHandler()) {
-            try {
-                // Duplex handlers implements both out/in interfaces causing a scalability issue
-                final ChannelHandler handler = handler();
-                final DefaultChannelPipeline.HeadContext headContext = pipeline.head;
-                if (handler == headContext) {
-                    headContext.connect(this, remoteAddress, localAddress, promise);
-                } else if (handler instanceof ChannelDuplexHandler) {
-                    ((ChannelDuplexHandler) handler).connect(this, remoteAddress, localAddress, promise);
-                } else if (handler instanceof ChannelOutboundHandlerAdapter) {
-                    ((ChannelOutboundHandlerAdapter) handler).connect(this, remoteAddress, localAddress, promise);
-                } else {
-                    ((ChannelOutboundHandler) handler).connect(this, remoteAddress, localAddress, promise);
-                }
-            } catch (Throwable t) {
-                notifyOutboundHandlerException(t, promise);
-            }
-        } else {
-            connect(remoteAddress, localAddress, promise);
-        }
-    }  
-    
-
-io.netty.channel.DefaultChannelPipeline.HeadContext.connect    
-        public void connect(
-                ChannelHandlerContext ctx,
-                SocketAddress remoteAddress, SocketAddress localAddress,
-                ChannelPromise promise) {
-            unsafe.connect(remoteAddress, localAddress, promise);
-        }   
-        
-io.netty.channel.nio.AbstractNioChannel.AbstractNioUnsafe.connect
-
-io.netty.channel.socket.nio.NioSocketChannel.doBind
-io.netty.channel.socket.nio.NioSocketChannel.doBind0
-    private void doBind0(SocketAddress localAddress) throws Exception {
-        if (PlatformDependent.javaVersion() >= 7) {
-            SocketUtils.bind(javaChannel(), localAddress);
-        } else {
-            SocketUtils.bind(javaChannel().socket(), localAddress);
-        }
-    }              
-```
 
 ## write
 
@@ -150,7 +9,7 @@ channel.writeAndFlush(request);
 ```
 
 io.netty.channel.Channel.write(msg)仅仅是将msg添加到outboundBuffer中,并非写入到socket中;io.netty.channel.Channel.flush()则是将outboundBuffer的数据写入到socket中.
-
+如果因为socket-output-buffer没有足够的空间导致部分数据无法写入,会让selector监听OP_WRITE事件来知道什么时候socket-output-buffer又有写空间了,然后写入剩余待写入的数据.
 
 ```text
 io.netty.channel.AbstractChannel.writeAndFlush(java.lang.Object)
@@ -267,7 +126,7 @@ io.netty.channel.AbstractChannel.AbstractUnsafe.write
                 return;
             }
 
-            outboundBuffer.addMessage(msg, size, promise);  // 💯💯💯 write操作仅仅事件msg添加到buffer中去,并没有写入到socket中.只有flush操作才会真正将数据写入socket.
+            outboundBuffer.addMessage(msg, size, promise);  // 💯💯💯 write操作仅仅事件msg添加到buffer中去,并没有写入到socket中.只有flush操作才会真正将数据写入socket.(outboundBuffer超过高水位也会触发flush)
         }
 
 
@@ -378,9 +237,9 @@ io.netty.channel.socket.nio.NioSocketChannel.doWrite
                     // Only one ByteBuf so use non-gathering write Zero length buffers are not added to nioBuffers by ChannelOutboundBuffer, so there is no need to check if the total size of all the buffers is non-zero.
                     ByteBuffer buffer = nioBuffers[0];
                     int attemptedBytes = buffer.remaining();
-                    final int localWrittenBytes = ch.write(buffer);  //💯💯💯 通过java的nio接口写入数据
+                    final int localWrittenBytes = ch.write(buffer);       //💯💯💯 通过java的nio接口写入数据
                     if (localWrittenBytes <= 0) {
-                        incompleteWrite(true);
+                        incompleteWrite(true);                           // 💯💯💯如果本次写入因为socket-output-buffer因为没有足够的空间导致部分数据无法写入,会让selector监听OP_WRITE事件
                         return;
                     }
                     adjustMaxBytesPerGatheringWrite(attemptedBytes, localWrittenBytes, maxBytesPerGatheringWrite);
@@ -394,7 +253,7 @@ io.netty.channel.socket.nio.NioSocketChannel.doWrite
                     long attemptedBytes = in.nioBufferSize();
                     final long localWrittenBytes = ch.write(nioBuffers, 0, nioBufferCnt);
                     if (localWrittenBytes <= 0) {
-                        incompleteWrite(true);
+                        incompleteWrite(true);                             // 💯💯💯如果本次写入因为socket-output-buffer因为没有足够的空间导致部分数据无法写入,会让selector监听OP_WRITE事件
                         return;
                     }
                     // Casting to int is safe because we limit the total amount of data in the nioBuffers to int above.
@@ -407,16 +266,30 @@ io.netty.channel.socket.nio.NioSocketChannel.doWrite
             }
         } while (writeSpinCount > 0);
 
-        incompleteWrite(writeSpinCount < 0);
-    }                          
+        incompleteWrite(writeSpinCount < 0);                
+    }
+
+    
+io.netty.channel.nio.AbstractNioByteChannel.incompleteWrite   
+    protected final void incompleteWrite(boolean setOpWrite) {
+        // Did not write completely.
+        if (setOpWrite) {
+            setOpWrite();                                                                     // interestOps设置OP_WRITE事件
+        } else {
+            // Schedule flush again later so other tasks can be picked up in the meantime
+            Runnable flushTask = this.flushTask;
+            if (flushTask == null) {
+                flushTask = this.flushTask = new Runnable() {
+                    @Override
+                    public void run() {
+                        flush();
+                    }
+                };
+            }
+            eventLoop().execute(flushTask);
+        }
+    } 
 ```
-
-
-
-
-
-
-
 
 
 

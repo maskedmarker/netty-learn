@@ -25,7 +25,7 @@ public class ZeroCopyFileServer {
     @Test
     public void test() throws InterruptedException {
         EventLoopGroup boss = new NioEventLoopGroup(1);
-        EventLoopGroup worker = new NioEventLoopGroup();  // 当不指定线程数时,由启动参数io.netty.eventLoopThreads或平台cpu线程*2决定
+        EventLoopGroup worker = new NioEventLoopGroup(1);  // 当不指定线程数时,由启动参数io.netty.eventLoopThreads或平台cpu线程*2决定
 
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();

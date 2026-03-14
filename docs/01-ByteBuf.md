@@ -74,3 +74,76 @@ ByteBuf
 		SimpleLeakAwareByteBuf 
 		AdvancedLeakAwareByteBuf 
 ```
+
+
+### UnpooledDirectByteBuf
+
+```text
+public class UnpooledDirectByteBuf extends AbstractReferenceCountedByteBuf {
+    ByteBuffer buffer;      // 对nio direct-buffer的封装
+    
+    private int capacity;
+    private int maxCapacity;
+    int readerIndex;
+    int writerIndex;
+}
+```
+
+```text
+protected ByteBuffer allocateDirect(int initialCapacity) {
+    return ByteBuffer.allocateDirect(initialCapacity);           // 底层用的是nio的创建direct-buffer
+}
+
+void setByteBuffer(ByteBuffer buffer, boolean tryFree) {
+    if (tryFree) {
+        ByteBuffer oldBuffer = this.buffer;
+        if (oldBuffer != null) {
+            if (doNotFree) {
+                doNotFree = false;
+            } else {
+                freeDirect(oldBuffer);
+            }
+        }
+    }
+
+    this.buffer = buffer;
+    tmpNioBuf = null;
+    capacity = buffer.remaining();
+}
+
+// ByteBuffer是不能扩容的. 该类的扩容实现:创建一个更大的ByteBuffer,然后将旧的ByteBuffer数据复制到新的ByteBuffer中
+public ByteBuf capacity(int newCapacity) {
+    checkNewCapacity(newCapacity);     // 防止新容量大于maxCapacity
+    int oldCapacity = capacity;
+    if (newCapacity == oldCapacity) {
+        return this;
+    }
+    int bytesToCopy;
+    if (newCapacity > oldCapacity) {
+        bytesToCopy = oldCapacity;
+    } else {
+        trimIndicesToCapacity(newCapacity);
+        bytesToCopy = newCapacity;
+    }
+    ByteBuffer oldBuffer = buffer;
+    ByteBuffer newBuffer = allocateDirect(newCapacity);
+    oldBuffer.position(0).limit(bytesToCopy);
+    newBuffer.position(0).limit(bytesToCopy);
+    newBuffer.put(oldBuffer).clear();
+    setByteBuffer(newBuffer, true);
+    return this;
+}  
+
+public UnpooledDirectByteBuf(ByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
+    super(maxCapacity);
+    ObjectUtil.checkNotNull(alloc, "alloc");
+    checkPositiveOrZero(initialCapacity, "initialCapacity");
+    checkPositiveOrZero(maxCapacity, "maxCapacity");
+    if (initialCapacity > maxCapacity) {
+        throw new IllegalArgumentException(String.format("initialCapacity(%d) > maxCapacity(%d)", initialCapacity, maxCapacity));
+    }
+
+    this.alloc = alloc;
+    setByteBuffer(allocateDirect(initialCapacity), false);
+}      
+```
