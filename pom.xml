@@ -11,6 +11,7 @@
     <modules>
         <module>ch01-hello</module>
         <module>ch00-infra</module>
+        <module>ch11-http-proxy</module>
     </modules>
 
     <properties>
