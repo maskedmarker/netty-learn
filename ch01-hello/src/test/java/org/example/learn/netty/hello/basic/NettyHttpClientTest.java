@@ -19,6 +19,9 @@ import org.junit.Test;
 
 public class NettyHttpClientTest {
 
+    // 防止接收的http响应过大,需要设置一个接收最大值(只用考虑content的大小,header的大小是有限制的)
+    private static final int RESPONSE_CONTENT_MAX_SIZE = 1024 * 1024;
+
     @Test
     public void test() throws Exception {
         URI uri = new URI("http://example.com");
@@ -35,7 +38,8 @@ public class NettyHttpClientTest {
                         public void initChannel(SocketChannel ch) {
                             ch.pipeline().addLast(new HttpClientCodec());
                             ch.pipeline().addLast(new HttpContentDecompressor());
-                            ch.pipeline().addLast(new HttpObjectAggregator(1024 * 1024));
+                            // A ChannelHandler that aggregates an HttpMessage and its following HttpContents into a single FullHttpRequest or FullHttpResponse with no following HttpContents.(分块传输时,一个响应会有多个content块)
+                            ch.pipeline().addLast(new HttpObjectAggregator(RESPONSE_CONTENT_MAX_SIZE));
                             ch.pipeline().addLast(new SimpleHttpClientHandler());
                         }
                     });
@@ -43,13 +47,15 @@ public class NettyHttpClientTest {
             Channel channel = b.connect(host, port).sync().channel();
 
             // 构造 GET 请求
-            FullHttpRequest request = new DefaultFullHttpRequest(
-                    HttpVersion.HTTP_1_1, HttpMethod.GET, uri.getRawPath().isEmpty() ? "/" : uri.getRawPath(),
-                    Unpooled.EMPTY_BUFFER);
+            String content = "hello world";
+            byte[] contentBytes = content.getBytes();
 
-            request.headers().set(HttpHeaderNames.HOST, host);
-            request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
-            request.headers().set(HttpHeaderNames.ACCEPT_ENCODING, HttpHeaderValues.GZIP);
+            FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, (uri.getRawPath().isEmpty() ? "/" : uri.getRawPath()), Unpooled.wrappedBuffer(contentBytes));
+            request.headers().set(HttpHeaderNames.HOST, host)
+                    .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE)                  // 让服务端主动关闭连接
+                    .set(HttpHeaderNames.ACCEPT_ENCODING, HttpHeaderValues.GZIP)
+                    .set(HttpHeaderNames.CONTENT_LENGTH, contentBytes.length);
+
 
             // 发送请求
             channel.writeAndFlush(request);
@@ -74,7 +80,6 @@ public class NettyHttpClientTest {
             boolean isGzip = "gzip".equalsIgnoreCase(contentEncoding);
             System.out.println("\nBody:");
             if (isGzip) {
-
                 ByteArrayInputStream bais = new ByteArrayInputStream(response.content().array());
                 GZIPInputStream gzipStream = new GZIPInputStream(bais);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(gzipStream, StandardCharsets.UTF_8));
