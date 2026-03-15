@@ -19,16 +19,24 @@ This is the first chunk.
 1a
 This is the second one.
 0
+Content-MD5: 1B2M2Y8AsgTpgAmY7PhCfg==
+X-Content-Signature: sha256:3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c
+X-Processing-Time: 127ms
+
 ```
 响应报文解析
 ```text
 HTTP/1.1 200 OK
 Content-Type: text/plain
-Transfer-Encoding: chunked                               // Transfer-Encoding: chunked 头部告诉客户端,接下来的数据不是一次性发送的,而是分块发送的.此时通常不会使用 Content-Length 头部.
-                                                         // 头部与正文之间必须有一个空行(CRLF)
-1e                                                       // 第一块.这是十六进制数字,表示该块数据的字节大小(30 字节).它独占一行,后面紧跟着 CRLF
-This is the first chunk.                                 // 这里是实际的 30 字节数据内容.数据结束后紧跟着 CRLF
-1a                                                       // 第二块
+Transfer-Encoding: chunked                                                   // Transfer-Encoding: chunked 头部告诉客户端,接下来的数据不是一次性发送的,而是分块发送的.此时通常不会使用 Content-Length 头部.
+                                                                             // 头部与正文之间必须有一个空行(CRLF)
+1e                                                                           // 第一块.这是十六进制数字,表示该块数据的字节大小(30 字节).它独占一行,后面紧跟着 CRLF
+This is the first chunk.                                                     // 这里是实际的 30 字节数据内容.数据结束后紧跟着 CRLF
+1a                                                                           // 第二块
 This is the second one.
-0                                                        // 结束块. 当发送一个长度为 0 的块时,表示所有数据发送完毕. 之后通常还要紧跟 CRLF 表示结束.在某些实现中,结束块后面还可以跟一个可选的尾部(Trailer)头部.
+0                                                                            // 结束块. 当发送一个长度为 0 的块时,表示所有数据发送完毕. 之后通常还要紧跟 CRLF 表示结束.在某些实现中,结束块后面还可以跟一个可选的尾部(Trailer)头部.
+Content-MD5: 1B2M2Y8AsgTpgAmY7PhCfg==                                        // 整个内容的MD5校验和(只有接收完所有数据块才能计算)
+X-Content-Signature: sha256:3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c         // 内容签名(动态生成的)
+X-Processing-Time: 127ms                                                     // 服务器处理总耗时(只有处理完成才知道)
+                                                                             // 最后以CRLF结束整个响应
 ```
