@@ -153,6 +153,7 @@ private static class ServerBootstrapAcceptor extends ChannelInboundHandlerAdapte
         try {
             // 将新连接注册childGroup的一个NioEventLoop上,然后注册到NioEventLoop管理的selector上💯💯💯(默认情况下新连接的所有事件将由注册的NioEventLoop负责)
             // 而且netty做了代码保护,不允许一个channel被注册到多个EventLoop上💯💯💯💯 (参见io.netty.channel.AbstractChannel.AbstractUnsafe.register)
+            // 一个channel只有一个eventLoop操作,避免并发问题,这是Netty高性能的重要原因
             childGroup.register(child).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
