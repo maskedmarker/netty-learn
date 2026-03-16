@@ -76,7 +76,7 @@ public class NettyTcpClientTest {
     private static class ClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
         @Override
-        public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        public void handlerAdded(ChannelHandlerContext ctx) throws Exception {    // handlerAdded先于channelActive,handler在added之前是无法接收消息的
             System.out.println("handler被加入ChannelHandlerContext");
         }
 
