@@ -32,7 +32,7 @@ public class NettyTcpClientTest {
     @Before
     public void setup() {
         Logger root = Logger.getLogger("");
-        root.setLevel(Level.FINE);
+        root.setLevel(Level.INFO);
         for (Handler h : root.getHandlers()) {
             h.setLevel(Level.FINE);
         }
@@ -41,7 +41,7 @@ public class NettyTcpClientTest {
     /**
      * 本地debug可以启动BioEchoTcpServer的test方法
      */
-    @Test
+    @Test(timeout = 10 * 1000)
     public void test() throws Exception {
         String host = "localhost";
         int port = 8080;
@@ -76,13 +76,23 @@ public class NettyTcpClientTest {
     private static class ClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
         @Override
-        public void handlerAdded(ChannelHandlerContext ctx) throws Exception {    // handlerAdded先于channelActive,handler在added之前是无法接收消息的
+        public void handlerAdded(ChannelHandlerContext ctx) throws Exception {     // handlerAdded先于channelActive,handler在added之前是无法接收消息的(通常也要求channel已经被registered了)
             System.out.println("handler被加入ChannelHandlerContext");
+        }
+
+        @Override
+        public void channelRegistered(ChannelHandlerContext ctx) throws Exception {  // handlerAdded和channelRegistered的没有明显的先后顺序,尽量不要依赖事件的先后顺序
+            System.out.println("通道已被注册");
         }
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
             System.out.println("通道已激活");
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+            System.out.println("通道已失去激活");
         }
 
         @Override
