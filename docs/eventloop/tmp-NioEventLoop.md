@@ -301,3 +301,49 @@ protected int doReadBytes(ByteBuf byteBuf) throws Exception {
     return byteBuf.writeBytes(javaChannel(), allocHandle.attemptedBytesRead());
 }
 ```
+
+## runAllTasks
+
+scheduledTaskQueue放的是定时任务;taskQueue放的是非定时类任务.
+实际执行任务时,将需要触发的定时任务转移到taskQueue,最终统一从taskQueue取任务并执行.
+
+io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks()
+```text
+protected boolean runAllTasks() {
+    assert inEventLoop();
+    boolean fetchedAll;
+    boolean ranAtLeastOne = false;
+
+    
+    do {
+        fetchedAll = fetchFromScheduledTaskQueue()     // 将定时任务队列scheduledTaskQueue中的需要触发的任务取出来放到taskQueue
+        if (runAllTasksFrom(taskQueue)) {              // 执行taskQueue中的任务
+            ranAtLeastOne = true;
+        }
+    } while (!fetchedAll);                             // 尽可能多的将需要触发的任务都执行了
+
+    if (ranAtLeastOne) {
+        lastExecutionTime = getCurrentTimeNanos();
+    }
+    afterRunningAllTasks();                            // 忽略,不重要
+    return ranAtLeastOne;
+}
+
+private boolean fetchFromScheduledTaskQueue() {
+    if (scheduledTaskQueue == null || scheduledTaskQueue.isEmpty()) {
+        return true;
+    }
+    long nanoTime = getCurrentTimeNanos();
+    for (;;) {
+        Runnable scheduledTask = pollScheduledTask(nanoTime);       // 将定时任务队列scheduledTaskQueue中的需要触发的任务取出来放到taskQueue
+        if (scheduledTask == null) {
+            return true;
+        }
+        if (!taskQueue.offer(scheduledTask)) {
+            // No space left in the task queue add it back to the scheduledTaskQueue so we pick it up again.
+            scheduledTaskQueue.add((ScheduledFutureTask<?>) scheduledTask);
+            return false;
+        }
+    }
+}
+```
