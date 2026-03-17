@@ -11,6 +11,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.stream.ChunkedFile;
 import org.junit.Test;
 
 import java.io.RandomAccessFile;
@@ -18,9 +20,12 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * ssl是流式加密技术,每次需要加密的数据是有大小限制的.
+ */
 public class ZeroCopyFileServer {
 
-    public static final int PORT = 9000;
+    public static final int PORT = 8080;
 
     @Test
     public void test() throws InterruptedException {
@@ -58,16 +63,20 @@ public class ZeroCopyFileServer {
             Path filePath = Paths.get(cwd, "src/test/resources", fileName);
             RandomAccessFile raf = new RandomAccessFile(filePath.toFile(), "r");
             FileChannel fileChannel = raf.getChannel();
-
             long length = fileChannel.size();
             System.out.println("sending-file size: " + length);
 
-            DefaultFileRegion region = new DefaultFileRegion(fileChannel, 0, length);
-            ctx.writeAndFlush(region)
-                    .addListener(f -> {
+            ChannelFuture opFuture;
+            if (ctx.pipeline().get(SslHandler.class) == null) {
+                DefaultFileRegion region = new DefaultFileRegion(fileChannel, 0, length);
+                opFuture = ctx.writeAndFlush(region);
+            } else {
+                opFuture = ctx.writeAndFlush(new ChunkedFile(raf));
+            }
+
+            opFuture.addListener(f -> {
                         System.out.println("Send complete");
                         raf.close();
-                        // ctx.close() 也可以这样关闭tcp连接
                     })
                     .addListener(ChannelFutureListener.CLOSE);
         }
