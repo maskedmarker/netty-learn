@@ -261,7 +261,7 @@ For example, you can insert an encryption handler when sensitive information is 
 
 
 
-![netty-pipeline](./images/netty-pipeline.png)
+![netty-pipeline](../images/netty-pipeline.png)
 
 
 
